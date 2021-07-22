@@ -29,22 +29,24 @@ const (
 // NutanixDriver driver structure
 type NutanixDriver struct {
 	*drivers.BaseDriver
-	Endpoint    string
-	Username    string
-	Password    string
-	Port        string
-	Insecure    bool
-	Cluster     string
-	VMVCPUs     int
-	VMCores     int
-	VMMem       int
-	SSHPass     string
-	Subnet      string
-	Image       string
-	VMId        string
-	SessionAuth bool
-	ProxyURL    string
-	Categories  string
+	Endpoint         string
+	Username         string
+	Password         string
+	Port             string
+	Insecure         bool
+	Cluster          string
+	VMVCPUs          int
+	VMCores          int
+	VMMem            int
+	SSHPass          string
+	Subnet           string
+	Image            string
+	VMId             string
+	SessionAuth      bool
+	ProxyURL         string
+	Categories       string
+	StorageContainer string
+	DiskSize         int
 }
 
 // NewDriver create new instance
@@ -194,6 +196,21 @@ func (d *NutanixDriver) Create() error {
 	if len(res.DiskList) < 1 {
 		log.Errorf("Image %s not found", d.Image)
 		return fmt.Errorf("image %s not found", d.Image)
+	}
+
+	if len(d.StorageContainer) != 0 && d.DiskSize > 0 {
+		n := &v3.VMDisk{
+			DiskSizeBytes: utils.Int64Ptr(int64(d.DiskSize) * 1024 * 1024 * 1024),
+			StorageConfig: &v3.VMStorageConfig {
+				StorageContainerReference: &v3.StorageContainerReference{
+					Kind: "storage_container",
+					UUID: d.StorageContainer,
+				},
+			},
+		}
+
+		res.DiskList = append(res.DiskList, n)
+		log.Infof("Added disk with %d GiB on storage container with UUID: %s", d.DiskSize, d.StorageContainer)
 	}
 
 	// SSH Key generation
@@ -350,6 +367,18 @@ func (d *NutanixDriver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "The name of the categories who will be applied to the newly created VM",
 			Value:  "",
 		},
+		mcnflag.StringFlag{
+			EnvVar: "NUTANIX_STORAGE_CONTAINER",
+			Name:   "nutanix-storage-container",
+			Usage:  "The UUID of the storage container",
+			Value:  "",
+		},
+		mcnflag.IntFlag{
+			EnvVar: "NUTANIX_DISK_SIZE",
+			Name:   "nutanix-disk-size",
+			Usage:  "The size of the attached disk",
+			Value:  0,
+		},
 	}
 }
 
@@ -482,6 +511,9 @@ func (d *NutanixDriver) SetConfigFromFlags(opts drivers.DriverOptions) error {
 	if d.Cluster == "" {
 		return fmt.Errorf("nutanix-cluster cannot be empty")
 	}
+
+	d.DiskSize = opts.Int("nutanix-disk-size")
+	d.StorageContainer = opts.Int("nutanix-storage-container")
 
 	d.VMMem = opts.Int("nutanix-vm-mem")
 	d.VMVCPUs = opts.Int("nutanix-vm-cpus")
