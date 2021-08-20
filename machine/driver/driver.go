@@ -208,7 +208,7 @@ func (d *NutanixDriver) Create() error {
 		return fmt.Errorf("image %s not found", d.Image)
 	}
 
-	if len(d.StorageContainer) != 0 && d.DiskSize > 0 {
+	if d.DiskSize > 0 {
 		n := &v3.VMDisk{
 			DiskSizeBytes: utils.Int64Ptr(int64(d.DiskSize) * 1024 * 1024 * 1024),
 			StorageConfig: &v3.VMStorageConfig{
