@@ -48,6 +48,7 @@ type NutanixDriver struct {
 	Categories       string
 	StorageContainer string
 	DiskSize         int
+	CPUPassthrough   bool
 }
 
 // NewDriver create new instance
@@ -91,6 +92,7 @@ func (d *NutanixDriver) Create() error {
 	res.MemorySizeMib = utils.Int64Ptr(int64(d.VMMem))
 	res.NumSockets = utils.Int64Ptr(int64(d.VMVCPUs))
 	res.NumVcpusPerSocket = utils.Int64Ptr(int64(d.VMCores))
+	res.EnableCPUPassthrough = utils.BoolPtr(d.CPUPassthrough)
 
 	// Search target cluster
 	clusterFilter := fmt.Sprintf("name==%s", d.Cluster)
@@ -341,6 +343,11 @@ func (d *NutanixDriver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "nutanix-insecure",
 			Usage:  "Explicitly allow the provider to perform \"insecure\" SSL requests",
 		},
+		mcnflag.BoolFlag{
+			EnvVar: "NUTANIX_CPU_PASSTHROUGH",
+			Name: "nutanix-cpu-passthrough",
+			Usage: "Explicitly enable CPU passthrough",
+		},
 		mcnflag.StringFlag{
 			EnvVar: "NUTANIX_CLUSTER",
 			Name:   "nutanix-cluster",
@@ -523,6 +530,7 @@ func (d *NutanixDriver) SetConfigFromFlags(opts drivers.DriverOptions) error {
 	d.Port = opts.String("nutanix-port")
 
 	d.Insecure = opts.Bool("nutanix-insecure")
+	d.CPUPassthrough = opts.Bool("nutanix-cpu-passthrough")
 
 	d.Categories = opts.String("nutanix-vm-categories")
 
