@@ -9,3 +9,5 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/terraform-providers/terraform-provider-nutanix v1.1.0
 )
+
+replace github.com/terraform-providers/terraform-provider-nutanix => github.com/svalabs/terraform-provider-nutanix v1.2.2
